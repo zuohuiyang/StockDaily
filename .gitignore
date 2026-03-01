@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.Python
+.venv/
+venv/
+ENV/
+
+# Logs / caches
+*.log
+.pytest_cache/
+.mypy_cache/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Local data (do not commit)
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+portfolio.db.bak_*
+daily_reports/
+portfolio_config.json
+
+# Temporary / exports
+*.csv
+*.tmp
+*.bak
+
+# IDE / assistant metadata
+.trae/
