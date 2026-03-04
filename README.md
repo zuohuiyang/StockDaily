@@ -5,7 +5,7 @@ A 股 + 美股的本地“收盘价（EOD）投资组合日报”生成器：由
 ## 你能得到什么
 
 - 自动生成 `daily_reports/YYYY-MM-DD_report.md`（按日期归档）
-- 支持 A 股（6 位代码）与美股 ticker
+- 支持 A 股（6 位代码）、美股 ticker、加密货币（BTC/ETH）
 - 每日采集：股票 EOD 收盘价 + USD/CNY 汇率
 - 缺失不估算：缺少行情或汇率时不纳入汇总，并在报告中体现
 
@@ -58,3 +58,5 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 
 - 行情采集：`python -m stock.ingest public-backfill` / `python -m stock.ingest public-daily`
 - 日报生成：`python -m stock.report daily`
+
+本地默认从 `private/holdings.json` 读取持仓（也可用 `--position` 直接传入持仓）。  

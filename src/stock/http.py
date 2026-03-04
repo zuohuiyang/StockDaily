@@ -39,3 +39,4 @@ def get_text(url: str, params: dict | None = None, timeout: int = 20, headers: d
 def get_json(url: str, params: dict | None = None, timeout: int = 20, headers: dict | None = None) -> dict:
     text = get_text(url=url, params=params, timeout=timeout, headers=headers)
     return json.loads(text)
+
