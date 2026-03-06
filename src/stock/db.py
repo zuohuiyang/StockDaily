@@ -28,7 +28,7 @@ class AssetRow:
 
 @contextmanager
 def connect(db_path: str):
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30)
     try:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")

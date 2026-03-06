@@ -22,15 +22,19 @@ A 股 + 美股的本地“收盘价（EOD）投资组合日报”生成器：由
 
 1) 传入持仓（股票代码与数量）
 - 在“生成日报”命令中，通过一个或多个 `--position <asset_id>:<quantity>` 传入
+  - 示例：`--position 518850:1 --position SOXX:1 --position ETH:1`
 
 2) 初始化历史数据（首次接入某批标的）
 - 运行 `public-backfill` 回补一段历史区间，并显式传入 `--symbols` 标的列表
+  - 示例：`--symbols 518850 SOXX ETH`
 
 3) 每天采集“昨天”的行情与汇率
 - 运行 `public-backfill`，并将 `--start` 与 `--end` 都设置为昨天，同时显式传入 `--symbols`
+  - 示例：`--symbols 518850 SOXX ETH`
 
 4) 每天生成“昨天”的日报
 - 运行 `stock.report daily --date <昨天>`，并传入同一批 `--position`
+  - 示例：`--position 518850:1 --position SOXX:1 --position ETH:1`
 
 日报落盘后，OpenClaw 通过扫描获取：
 

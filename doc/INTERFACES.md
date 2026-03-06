@@ -47,6 +47,7 @@ OpenClaw 典型用法：
 - `--position`：可重复传入，表示一个持仓；格式：`<asset_id>:<quantity>`
   - `asset_id`：A 股 6 位代码 / 美股 ticker / 虚拟币 BTC、ETH
   - `quantity`：数量（可为小数，适配虚拟币）
+  - 备注：加密货币行情当前通过 CoinGecko 获取，仅支持 BTC 与 ETH
 
 ## 场景化调用流程
 
@@ -65,7 +66,8 @@ python -m stock.report daily \
   --date 2026-03-03 \
   --out-dir daily_reports \
   --position 600519:10 \
-  --position AAPL:5
+  --position AAPL:5 \
+  --position ETH:1
 ```
 
 说明：
@@ -84,7 +86,7 @@ python -m stock.report daily \
 python -m stock.ingest public-backfill \
   --start 2026-01-01 \
   --end 2026-03-03 \
-  --symbols 600519 AAPL
+  --symbols 600519 AAPL ETH
 ```
 
 ### 场景 3：每天触发拉取“昨天”的股票与汇率数据
@@ -99,7 +101,7 @@ python -m stock.ingest public-backfill \
 python -m stock.ingest public-backfill \
   --start 2026-03-03 \
   --end 2026-03-03 \
-  --symbols 600519 AAPL
+  --symbols 600519 AAPL ETH
 ```
 
 ### 场景 4：每天触发生成“昨天”的日报
@@ -115,7 +117,8 @@ python -m stock.report daily \
   --date 2026-03-03 \
   --out-dir daily_reports \
   --position 600519:10 \
-  --position AAPL:5
+  --position AAPL:5 \
+  --position ETH:1
 ```
 
 成功判定（建议）：

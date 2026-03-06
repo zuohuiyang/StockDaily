@@ -98,29 +98,65 @@ _COINGECKO_ID_BY_SYMBOL = {
 }
 
 
-def fetch_crypto_close_prices_usd(asset_id: str, start: str, end: str) -> list[tuple[str, float]]:
-    coin_id = _COINGECKO_ID_BY_SYMBOL.get(asset_id.upper())
-    if not coin_id:
-        return []
-    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
+def _fetch_crypto_close_prices_usd_cryptocompare(asset_id: str, start: str, end: str) -> list[tuple[str, float]]:
     start_ts = _to_ts_utc(start)
-    end_ts = _to_ts_utc(end) + 86400
-    params = {"vs_currency": "usd", "from": str(start_ts), "to": str(end_ts)}
+    end_ts = _to_ts_utc(end) + 86399
+    days = max(0, int((end_ts - start_ts) // 86400))
+    url = "https://min-api.cryptocompare.com/data/v2/histoday"
+    params = {"fsym": asset_id.upper(), "tsym": "USD", "toTs": str(end_ts), "limit": str(days)}
     data = get_json(url=url, params=params, timeout=20)
-    prices = data.get("prices") or []
-    by_day: dict[str, list[float]] = defaultdict(list)
-    for ts_ms, price in prices:
-        if price is None:
-            continue
-        d = datetime.fromtimestamp(int(ts_ms) / 1000.0, tz=timezone.utc).date().isoformat()
-        by_day[d].append(float(price))
+    payload = (data.get("Data") or {}).get("Data") or []
     out: list[tuple[str, float]] = []
-    for d, ps in by_day.items():
-        if not ps:
+    for row in payload:
+        ts = row.get("time")
+        close = row.get("close")
+        if ts is None or close is None:
             continue
-        out.append((d, ps[-1]))
+        d = datetime.fromtimestamp(int(ts), tz=timezone.utc).date().isoformat()
+        if d < start or d > end:
+            continue
+        out.append((d, float(close)))
     out.sort(key=lambda x: x[0])
     return out
+
+
+def fetch_crypto_close_prices_usd(asset_id: str, start: str, end: str) -> list[tuple[str, float]]:
+    up = asset_id.upper()
+    if up not in ("BTC", "ETH"):
+        return []
+
+    try:
+        out = _fetch_crypto_close_prices_usd_cryptocompare(asset_id=up, start=start, end=end)
+        if out:
+            return out
+    except Exception:
+        pass
+
+    coin_id = _COINGECKO_ID_BY_SYMBOL.get(up)
+    if not coin_id:
+        return []
+    try:
+        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
+        start_ts = _to_ts_utc(start)
+        end_ts = _to_ts_utc(end) + 86400
+        params = {"vs_currency": "usd", "from": str(start_ts), "to": str(end_ts)}
+        data = get_json(url=url, params=params, timeout=20)
+        prices = data.get("prices") or []
+        by_day: dict[str, list[float]] = defaultdict(list)
+        for ts_ms, price in prices:
+            if price is None:
+                continue
+            d = datetime.fromtimestamp(int(ts_ms) / 1000.0, tz=timezone.utc).date().isoformat()
+            by_day[d].append(float(price))
+        out2: list[tuple[str, float]] = []
+        for d, ps in by_day.items():
+            if not ps:
+                continue
+            out2.append((d, ps[-1]))
+        out2.sort(key=lambda x: x[0])
+        return out2
+    except Exception:
+        return []
 
 
 def yesterday() -> str:

@@ -50,6 +50,12 @@ class TestHoldings(unittest.TestCase):
         self.assertEqual(p.asset_id, "SOXX")
         self.assertEqual(p.quantity, 1.0)
 
+        p = parse_position_arg("eth:1")
+        self.assertEqual(p.asset_id, "ETH")
+        self.assertEqual(p.asset_class, "CRYPTO")
+        self.assertEqual(p.currency, "USD")
+        self.assertEqual(p.quantity, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

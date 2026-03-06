@@ -14,10 +14,24 @@ def _fmt_pct(v: float) -> str:
     return f"{v*100:.2f}%"
 
 
+def _norm_signed(v: float) -> float:
+    if abs(v) < 0.0005:
+        return 0.0
+    return v
+
+
+def _fmt_signed_num(v: float) -> str:
+    return f"{_norm_signed(v):+.2f}"
+
+
+def _fmt_signed_pct(v: float) -> str:
+    return f"{_norm_signed(v*100):+.2f}%"
+
+
 def _fmt_money_delta(delta: float | None, pct: float | None) -> str:
     if delta is None or pct is None:
         return "-"
-    return f"{_fmt_num(delta)}（{_fmt_pct(pct)}）"
+    return f"{_fmt_signed_num(delta)}（{_fmt_signed_pct(pct)}）"
 
 
 def _fmt_value(v: float | None) -> str:
@@ -95,4 +109,3 @@ def write_daily_report(
         latest = out / latest_name
         atomic_write_text(latest, markdown)
     return archive
-

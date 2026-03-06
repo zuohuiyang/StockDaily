@@ -59,6 +59,8 @@ class TestReport(unittest.TestCase):
             md = render_markdown(data)
             self.assertIn("# StockDaily 日报", md)
             self.assertIn("- 报告日期：2026-03-03", md)
+            self.assertIn("| 较昨日（CNY） | +0.00（+0.00%） |", md)
+            self.assertIn("| 较年初（CNY） | +0.00（+0.00%） |", md)
             self.assertIn("- 缺少收盘价：无", md)
             self.assertIn("- 缺少汇率：无", md)
             self.assertIn("| 518850 | CN_STOCK | CNY |", md)
