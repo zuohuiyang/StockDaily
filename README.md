@@ -2,6 +2,15 @@
 
 A 股 + 美股的本地“收盘价（EOD）投资组合日报”生成器：由 OpenClaw 在 Linux 生产环境中调用，按固定目录落盘 Markdown 日报，供 OpenClaw 扫描归档文件并消费结果。
 
+## 作为 OpenClaw Skill 使用（推荐）
+
+本仓库采用“单 skill 仓库”形态：OpenClaw 将本仓库 clone 到它的 skills 目录后，按根目录入口执行。
+
+- 人读入口：[SKILL.md](SKILL.md)
+- 机读入口：[skill.yaml](skill.yaml)
+- Linux 入口：`./run.sh --request <request.json>`
+- Windows 联调入口：`.\run.ps1 -Request <request.json>`
+
 ## 你能得到什么
 
 - 自动生成 `daily_reports/YYYY-MM-DD_report.md`（按日期归档）
@@ -13,6 +22,7 @@ A 股 + 美股的本地“收盘价（EOD）投资组合日报”生成器：由
 
 - 调用约定（给 OpenClaw/调用方）：[doc/INTERFACES.md](doc/INTERFACES.md)
 - 分层架构（给开发者）：[doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)
+- 故障排查（给联调/运维）：[doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md)
 
 ## 生产调用（OpenClaw）
 

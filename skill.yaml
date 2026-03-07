@@ -1,0 +1,52 @@
+name: stockdaily-openclaw
+version: 0.1.0
+description: 采集指定日期行情/汇率并生成 Markdown 投资组合日报（给 OpenClaw 调用）
+entry: run.sh
+platform: linux
+runtime:
+  python: ">=3.10"
+inputs:
+  request:
+    type: file
+    format: json
+    required: true
+    fields:
+      date:
+        type: string
+        format: date
+        required: true
+      positions:
+        type: array
+        required: true
+        items:
+          type: string
+          format: "<asset_id>:<quantity>"
+      db_path:
+        type: string
+        required: false
+        default: portfolio.db
+      out_dir:
+        type: string
+        required: false
+        default: daily_reports
+      backfill:
+        type: object
+        required: false
+        fields:
+          start:
+            type: string
+            format: date
+            required: true
+          end:
+            type: string
+            format: date
+            required: true
+outputs:
+  report:
+    type: file
+    format: markdown
+    path_template: "daily_reports/{date}_report.md"
+exit_codes:
+  "0": success
+  "1": failure
+  "2": usage_error
