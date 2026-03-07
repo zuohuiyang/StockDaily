@@ -41,8 +41,9 @@ def _fmt_value(v: float | None) -> str:
 
 
 def _fmt_row(r: ReportRow) -> str:
+    asset_display = f"{r.asset_name}({r.asset_id})" if r.asset_name else r.asset_id
     return (
-        f"| {r.asset_id} | {r.asset_class} | {r.currency} | {_fmt_num(r.quantity)} | {_fmt_value(r.avg_cost)}"
+        f"| {asset_display} | {r.asset_class} | {r.currency} | {_fmt_num(r.quantity)} | {_fmt_value(r.avg_cost)}"
         f" | {_fmt_value(r.close_price)} | {_fmt_value(r.value_cny)}"
         f" | {_fmt_money_delta(r.delta_vs_prev_cny, r.delta_vs_prev_pct)}"
         f" | {_fmt_money_delta(r.delta_vs_year_start_cny, r.delta_vs_year_start_pct)} |"

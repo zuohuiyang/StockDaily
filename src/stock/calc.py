@@ -27,6 +27,7 @@ class ReportRow:
     delta_vs_prev_pct: float | None
     delta_vs_year_start_cny: float | None
     delta_vs_year_start_pct: float | None
+    asset_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -225,6 +226,7 @@ def build_daily_report_data(
                 delta_vs_prev_pct=dv_prev_pct,
                 delta_vs_year_start_cny=dv_year,
                 delta_vs_year_start_pct=dv_year_pct,
+                asset_name=p.name,
             )
         )
 

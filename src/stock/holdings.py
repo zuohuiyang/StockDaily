@@ -14,6 +14,7 @@ class HoldingPosition:
     quantity: float
     currency: str
     avg_cost: float | None
+    name: str | None = None
 
 
 _CN_CODE_RE = re.compile(r"^\d{6}$")
@@ -73,6 +74,7 @@ def load_holdings_json(path: str) -> list[HoldingPosition]:
         quantity = p.get("quantity")
         currency = p.get("currency")
         avg_cost = p.get("avg_cost")
+        name = p.get("name")
         if not asset_class:
             missing.append("asset_class")
         if not asset_id:
@@ -101,5 +103,14 @@ def load_holdings_json(path: str) -> list[HoldingPosition]:
                 ac = float(avg_cost)
             except ValueError:
                 raise ValueError(f"positions[{i}].avg_cost 不是数字") from None
-        out.append(HoldingPosition(asset_class=cls, asset_id=aid, quantity=q, currency=c, avg_cost=ac))
+        out.append(
+            HoldingPosition(
+                asset_class=cls,
+                asset_id=aid,
+                quantity=q,
+                currency=c,
+                avg_cost=ac,
+                name=str(name) if name else None,
+            )
+        )
     return out

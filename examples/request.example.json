@@ -1,0 +1,6 @@
+{
+  "date": "2026-03-03",
+  "positions": ["600519:10", "AAPL:5", "ETH:1"],
+  "db_path": "portfolio.db",
+  "out_dir": "daily_reports"
+}
