@@ -4,6 +4,7 @@ import sqlite3
 from contextlib import contextmanager
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 
 ASSET_CLASS_CN = "CN_STOCK"
@@ -223,6 +224,52 @@ def get_prices_for_date(
         (price_date, *ids),
     ).fetchall()
     return {str(r["asset_id"]): float(r["close_price"]) for r in rows}
+
+
+def get_latest_prices(
+    conn: sqlite3.Connection,
+    *,
+    asset_class: str,
+    asset_ids: Iterable[str],
+    max_date: str,
+    lookback_days: int = 5,
+) -> dict[str, tuple[str, float]]:
+    """
+    获取不晚于 max_date 的最近一次收盘价。
+    返回: {asset_id: (price_date, close_price)}
+    """
+    ids = [str(x) for x in asset_ids]
+    if not ids:
+        return {}
+    
+    # Calculate min_date for optimization
+    try:
+        max_dt = datetime.strptime(max_date, "%Y-%m-%d")
+        min_date = (max_dt - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
+    except ValueError:
+        min_date = "1970-01-01"
+
+    table = table_for_asset_class(asset_class)
+    ph = ",".join("?" for _ in ids)
+    
+    # 使用 Window Function 或 Group By 获取最新日期
+    # SQLite 3.25+ 支持 Window Functions. 假设环境支持。
+    # 为了兼容性，使用 Group By + Join 或者关联子查询
+    
+    query = f"""
+        SELECT t1.asset_id, t1.price_date, t1.close_price
+        FROM {table} t1
+        JOIN (
+            SELECT asset_id, MAX(price_date) as max_date
+            FROM {table}
+            WHERE price_date <= ? AND price_date >= ?
+            AND asset_id IN ({ph})
+            GROUP BY asset_id
+        ) t2 ON t1.asset_id = t2.asset_id AND t1.price_date = t2.max_date
+    """
+    
+    rows = conn.execute(query, (max_date, min_date, *ids)).fetchall()
+    return {str(r["asset_id"]): (str(r["price_date"]), float(r["close_price"])) for r in rows}
 
 
 def list_price_dates(

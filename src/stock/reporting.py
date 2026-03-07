@@ -40,11 +40,15 @@ def _fmt_value(v: float | None) -> str:
     return _fmt_num(v)
 
 
-def _fmt_row(r: ReportRow) -> str:
+def _fmt_row(r: ReportRow, report_date: str) -> str:
     asset_display = f"{r.asset_name}({r.asset_id})" if r.asset_name else r.asset_id
+    price_display = _fmt_value(r.close_price)
+    if r.effective_date and r.effective_date != report_date:
+        price_display += " *"  # Mark as fallback
+    
     return (
         f"| {asset_display} | {r.asset_class} | {r.currency} | {_fmt_num(r.quantity)} | {_fmt_value(r.avg_cost)}"
-        f" | {_fmt_value(r.close_price)} | {_fmt_value(r.value_cny)}"
+        f" | {price_display} | {_fmt_value(r.value_cny)}"
         f" | {_fmt_money_delta(r.delta_vs_prev_cny, r.delta_vs_prev_pct)}"
         f" | {_fmt_money_delta(r.delta_vs_year_start_cny, r.delta_vs_year_start_pct)} |"
     )
@@ -53,6 +57,12 @@ def _fmt_row(r: ReportRow) -> str:
 def render_markdown(data: DailyReportData) -> str:
     missing_prices = "无" if not data.missing_prices else ", ".join(data.missing_prices)
     missing_fx = "无" if not data.missing_fx else ", ".join(data.missing_fx)
+    
+    fallbacks = []
+    for r in data.rows:
+        if r.effective_date and r.effective_date != data.report_date:
+            fallbacks.append(f"{r.asset_id} (使用 {r.effective_date})")
+    fallback_desc = "无" if not fallbacks else ", ".join(fallbacks)
 
     lines: list[str] = []
     lines.append("# StockDaily 日报")
@@ -78,12 +88,14 @@ def render_markdown(data: DailyReportData) -> str:
     lines.append("| 标的 | 类型 | 币种 | 数量 | 成本价 | 收盘价 | 市值（CNY） | 较昨日（CNY） | 较年初（CNY） |")
     lines.append("|---|---|---|---:|---:|---:|---:|---:|---:|")
     for r in data.rows:
-        lines.append(_fmt_row(r))
+        lines.append(_fmt_row(r, data.report_date))
     lines.append("")
     lines.append("## 数据缺口")
     lines.append("")
     lines.append(f"- 缺少收盘价：{missing_prices}")
     lines.append(f"- 缺少汇率：{missing_fx}")
+    if fallbacks:
+        lines.append(f"- **数据回退**：{fallback_desc} (收盘价已标记 *)")
     lines.append("")
     return "\n".join(lines)
 

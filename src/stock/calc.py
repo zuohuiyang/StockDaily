@@ -12,6 +12,7 @@ class ValuePoint:
     value_cny: float | None
     close_price: float | None
     exchange_rate: float | None
+    effective_date: str | None = None
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class ReportRow:
     delta_vs_year_start_cny: float | None
     delta_vs_year_start_pct: float | None
     asset_name: str | None = None
+    effective_date: str | None = None
 
 
 @dataclass(frozen=True)
@@ -68,10 +70,30 @@ def _calc_for_date(
     for p in positions:
         by_class.setdefault(p.asset_class, []).append(p.asset_id)
 
-    prices_cn = dbm.get_prices_for_date(conn, asset_class=dbm.ASSET_CLASS_CN, asset_ids=by_class[dbm.ASSET_CLASS_CN], price_date=target_date)
-    prices_us = dbm.get_prices_for_date(conn, asset_class=dbm.ASSET_CLASS_US, asset_ids=by_class[dbm.ASSET_CLASS_US], price_date=target_date)
-    prices_crypto = dbm.get_prices_for_date(conn, asset_class=dbm.ASSET_CLASS_CRYPTO, asset_ids=by_class[dbm.ASSET_CLASS_CRYPTO], price_date=target_date)
+    # Use get_latest_prices to support fallback
+    prices_cn = dbm.get_latest_prices(conn, asset_class=dbm.ASSET_CLASS_CN, asset_ids=by_class[dbm.ASSET_CLASS_CN], max_date=target_date)
+    prices_us = dbm.get_latest_prices(conn, asset_class=dbm.ASSET_CLASS_US, asset_ids=by_class[dbm.ASSET_CLASS_US], max_date=target_date)
+    prices_crypto = dbm.get_latest_prices(conn, asset_class=dbm.ASSET_CLASS_CRYPTO, asset_ids=by_class[dbm.ASSET_CLASS_CRYPTO], max_date=target_date)
+    
+    # FX: For now, still exact match or simple fallback? 
+    # db.py doesn't have get_latest_exchange_rate. 
+    # Let's assume FX is populated by ingest. But ideally fallback for FX too.
+    # For now, let's keep exact match for FX to minimize changes, or implement fallback if needed.
+    # Given ingest ensures FX is fetched, let's stick to get_exchange_rate.
     fx_usd_cny = dbm.get_exchange_rate(conn, from_ccy="USD", to_ccy="CNY", rate_date=target_date)
+    # If exact FX missing, maybe try target_date - 1?
+    # Let's leave FX strict for now as it's less volatile/market-specific than stock holidays.
+    # But wait, holidays affect FX too.
+    # Simple retry for FX:
+    if fx_usd_cny is None:
+         # Try T-1
+         from datetime import datetime, timedelta
+         try:
+             dt = datetime.strptime(target_date, "%Y-%m-%d")
+             prev = (dt - timedelta(days=1)).strftime("%Y-%m-%d")
+             fx_usd_cny = dbm.get_exchange_rate(conn, from_ccy="USD", to_ccy="CNY", rate_date=prev)
+         except Exception:
+             pass
 
     missing_prices: list[str] = []
     missing_fx: list[str] = []
@@ -80,39 +102,41 @@ def _calc_for_date(
     any_value = False
 
     for p in positions:
-        close: float | None
+        price_info: tuple[str, float] | None
         if p.asset_class == dbm.ASSET_CLASS_CN:
-            close = prices_cn.get(p.asset_id)
+            price_info = prices_cn.get(p.asset_id)
         elif p.asset_class == dbm.ASSET_CLASS_US:
-            close = prices_us.get(p.asset_id)
+            price_info = prices_us.get(p.asset_id)
         else:
-            close = prices_crypto.get(p.asset_id)
+            price_info = prices_crypto.get(p.asset_id)
 
-        if close is None:
+        if price_info is None:
             missing_prices.append(p.asset_id)
             points[p.asset_id] = ValuePoint(value_cny=None, close_price=None, exchange_rate=fx_usd_cny)
             continue
+        
+        effective_date, close = price_info
 
         if p.currency == "CNY":
             value = p.quantity * close
             total += value
             any_value = True
-            points[p.asset_id] = ValuePoint(value_cny=value, close_price=close, exchange_rate=None)
+            points[p.asset_id] = ValuePoint(value_cny=value, close_price=close, exchange_rate=None, effective_date=effective_date)
             continue
 
         if p.currency == "USD":
             if fx_usd_cny is None:
                 missing_fx.append(p.asset_id)
-                points[p.asset_id] = ValuePoint(value_cny=None, close_price=close, exchange_rate=None)
+                points[p.asset_id] = ValuePoint(value_cny=None, close_price=close, exchange_rate=None, effective_date=effective_date)
                 continue
             value = p.quantity * close * fx_usd_cny
             total += value
             any_value = True
-            points[p.asset_id] = ValuePoint(value_cny=value, close_price=close, exchange_rate=fx_usd_cny)
+            points[p.asset_id] = ValuePoint(value_cny=value, close_price=close, exchange_rate=fx_usd_cny, effective_date=effective_date)
             continue
 
         missing_fx.append(p.asset_id)
-        points[p.asset_id] = ValuePoint(value_cny=None, close_price=close, exchange_rate=None)
+        points[p.asset_id] = ValuePoint(value_cny=None, close_price=close, exchange_rate=None, effective_date=effective_date)
 
     return points, (total if any_value else None), missing_prices, missing_fx
 
@@ -227,6 +251,7 @@ def build_daily_report_data(
                 delta_vs_year_start_cny=dv_year,
                 delta_vs_year_start_pct=dv_year_pct,
                 asset_name=p.name,
+                effective_date=pt.effective_date,
             )
         )
 

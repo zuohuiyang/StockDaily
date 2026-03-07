@@ -60,9 +60,6 @@ if ($req.backfill) {
   if ([string]::IsNullOrWhiteSpace($start) -or [string]::IsNullOrWhiteSpace($end)) {
     throw "request.backfill.start/end is required"
   }
-} else {
-  $start = $date
-  $end = $date
 }
 
 $symbols = New-Object System.Collections.Generic.List[string]
@@ -79,7 +76,12 @@ foreach ($p in $positions) {
   $symbols.Add($assetId)
 }
 
-$ingestArgs = @("--db", $dbPath, "public-backfill", "--start", $start, "--end", $end, "--symbols") + $symbols.ToArray()
+if ($req.backfill) {
+  $ingestArgs = @("--db", $dbPath, "public-backfill", "--start", $start, "--end", $end, "--symbols") + $symbols.ToArray()
+} else {
+  $ingestArgs = @("--db", $dbPath, "public-daily", "--date", $date, "--symbols") + $symbols.ToArray()
+}
+
 $reportArgs = @("--db", $dbPath, "daily", "--date", $date, "--out-dir", $outDir)
 foreach ($p in $positions) {
   $reportArgs += @("--position", [string]$p)
